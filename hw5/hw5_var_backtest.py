@@ -51,13 +51,30 @@ realized_losses = losses.iloc[window:].to_numpy()
 historical_var = np.array(historical_var)
 historical_exceedance = realized_losses > historical_var
 
+task2_results = pd.DataFrame(
+    {
+        "realized_full_loss": realized_losses,
+        "empirical_var": historical_var,
+        "exceedance": historical_exceedance,
+    },
+    index=dates,
+)
+
+print("\nTask 2: empirical-distribution VaR using the full loss operator")
+print(f"Rolling window M: {window} returns")
+print(f"Evaluation periods J = N - M: {len(task2_results)}")
+print("First and last five VaR estimates with realized losses and exceedances:")
+print(pd.concat([task2_results.head(), task2_results.tail()]))
+print(f"Task 2 exceedances: {historical_exceedance.sum()}")
+
 
 # Task 3
-mu_hat = returns.iloc[:window].mean()
-sigma2_hat = returns.iloc[:window].var(ddof=1)
+initial_mu_hat = returns.iloc[:window].mean()
+initial_sigma2_hat = returns.iloc[:window].var(ddof=1)
+mu_hat = initial_mu_hat
+sigma2_hat = initial_sigma2_hat
 normal_var = []
 
-# find exceedances
 for observed_return in returns.iloc[window:]:
     estimate = 1 - np.exp(mu_hat + np.sqrt(sigma2_hat) * norm.ppf(1 - alpha))
     normal_var.append(estimate)
@@ -69,19 +86,22 @@ for observed_return in returns.iloc[window:]:
 normal_var = np.array(normal_var)
 normal_exceedance = realized_losses > normal_var
 
-results = pd.DataFrame(
+task3_results = pd.DataFrame(
     {
-        "loss": realized_losses,
-        "historical_var": historical_var,
-        "historical_exceedance": historical_exceedance,
+        "realized_full_loss": realized_losses,
         "normal_ewma_var": normal_var,
-        "normal_ewma_exceedance": normal_exceedance,
+        "exceedance": normal_exceedance,
     },
     index=dates,
 )
 
-print("\nTasks 2 and 3: first and last five estimates")
-print(pd.concat([results.head(), results.tail()]))
+print("\nTask 3: normal-log-returns VaR with EWMA updating")
+print(f"Initial mean from the first {window} returns: {initial_mu_hat:.8f}")
+print(f"Initial standard deviation: {np.sqrt(initial_sigma2_hat):.8f}")
+print(f"Same evaluation periods as Task 2: {len(task3_results)}")
+print("First and last five VaR estimates with realized losses and exceedances:")
+print(pd.concat([task3_results.head(), task3_results.tail()]))
+print(f"Task 3 exceedances: {normal_exceedance.sum()}")
 
 
 # Task 4
@@ -95,4 +115,5 @@ print(f"\nTask 4: {(1-beta):.0%} exceedance-count interval: [{lower}, {upper}]")
 print(f"Historical exceedances: {historical_count} ({lower <= historical_count <= upper})")
 print(f"Normal/EWMA exceedances: {normal_count} ({lower <= normal_count <= upper})")
 
-results.to_csv("hw5_var_backtest_results.csv")
+task2_results.to_csv("hw5_var_backtest_task2.csv")
+task3_results.to_csv("hw5_var_backtest_task3.csv")
